@@ -1,0 +1,71 @@
+#include "Stream.h"
+#include "Memory.h"
+
+namespace UCore
+{
+	//////////////////////////////////////////////////////////////////////////
+	StreamSaverMemory::StreamSaverMemory()
+	{
+		mIsLoader = true;
+		mHasError = false;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	StreamSaverMemory::~StreamSaverMemory()
+	{
+	}
+	//////////////////////////////////////////////////////////////////////////
+	unsigned StreamSaverMemory::GetSeek() const
+	{
+		return mBuffer.Length();
+	}
+	//////////////////////////////////////////////////////////////////////////
+	ArchiveStream& StreamSaverMemory::Bytes(void* bytes, unsigned length)
+	{
+		if (length && !mHasError)
+		{
+			UASSERT(bytes);
+			mBuffer.Append((const char*)bytes, length);
+		}
+		return *this;
+	}
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////
+	StreamLoaderMemory::StreamLoaderMemory(void* data, size_t size)
+	{
+		mIsLoader = false;
+		mHasError = false;
+		mData = (char*)data;
+		mSize = size;
+		mPos = 0;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	StreamLoaderMemory::~StreamLoaderMemory()
+	{
+		mData = nullptr;
+		mSize = 0;
+		mPos = 0;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	ArchiveStream& StreamLoaderMemory::Bytes(void* bytes, unsigned length)
+	{
+		if (length && !mHasError)
+		{
+			UASSERT(bytes);
+			size_t nFree = mSize - mPos;
+			if (length <= nFree)
+			{
+				MemCopy(bytes, mData + mPos, length);
+				mPos += length;
+			}
+			else
+			{
+				mHasError = true;
+			}
+		}
+		
+		return *this;
+	}
+}

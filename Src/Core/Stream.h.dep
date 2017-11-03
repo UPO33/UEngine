@@ -1,0 +1,78 @@
+#pragma once
+
+#include "Base.h"
+#include "Array.h"
+
+namespace UCore
+{
+	class String;
+	class Name;
+
+
+	/*
+	Base class for streaming data, IsLoader means the class only reads data from a file, memory, package, ...
+	*/
+	class UCORE_API ArchiveStream
+	{
+	protected:
+		bool mIsLoader;
+		bool mHasError;
+
+	public:
+		//read/write a variable
+		template<typename T> ArchiveStream& RW(T& value)
+		{
+			Bytes(&value, sizeof(T));
+			return *this;
+		}
+		
+		virtual ~ArchiveStream() {}
+
+		//indicates whether this stream reads data or writes
+		bool IsLoader() const { return mIsLoader; }
+		bool IsSaver() const { return !mIsLoader; }
+		//if the stream has error it doesn't read/write
+		bool HasError() const { return mHasError; }
+		//number of bytes read or written
+		virtual unsigned GetSeek() const = 0;
+
+		//ignore numByte if is writer stream, nothing do on reading
+		virtual ArchiveStream& Ignore(unsigned numByte) { return *this; }
+		//read/write bytes
+		virtual ArchiveStream& Bytes(void* bytes, unsigned length) = 0;
+	};
+
+
+	/*
+	a simple stream which writes the taken data to memory
+	*/
+	class UCORE_API StreamSaverMemory : public ArchiveStream
+	{
+		TArray<char> mBuffer;
+	public:
+		StreamSaverMemory();
+		~StreamSaverMemory();
+
+		virtual unsigned GetSeek() const override;
+		virtual ArchiveStream& Bytes(void* bytes, unsigned length) override;
+		void* GetHead() const { return mBuffer.Elements(); }
+		
+	};
+
+	/*
+	a simple stream which takes data from memory
+	*/
+	class UCORE_API StreamLoaderMemory : public ArchiveStream
+	{
+		char* mData;
+		size_t mSize;
+		size_t mPos;
+	public:
+		StreamLoaderMemory(void* data = nullptr, size_t size = 0);
+		~StreamLoaderMemory();
+
+		virtual ArchiveStream& Bytes(void* bytes, unsigned length) override;
+		virtual unsigned GetSeek() const override { return mPos;}
+		void* GetHead() const { return mData; }
+	};
+};

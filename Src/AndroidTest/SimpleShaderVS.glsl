@@ -1,0 +1,5 @@
+
+const char* gSimpleShaderVSSrc =R"(
+
+)";
+
