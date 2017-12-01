@@ -1,4 +1,5 @@
-#include "Base.h"
+#if 0
+#include "EditorBase.h"
 
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qsplashscreen.h>
@@ -9,7 +10,7 @@
 #include <QtWidgets/QtWidgets>
 #include <QtWidgets/qitemeditorfactory.h>
 
-#include "../EditorBase/FlowLayout.h"
+#include "../EditorCommon/FlowLayout.h"
 
 
 #if 0
@@ -467,3 +468,4 @@ int main2(int argc, char** argv)
 	return app.exec();
 
 };
+#endif // _DEBUG

@@ -69,7 +69,13 @@ namespace UCore
 	struct AttrHidden : public AttrBase {};
 	////a volatile property or class will not be serialized/deserialized
 	struct AttrVolatile : public AttrBase {};
+	////
+	struct AttrIcon : AttrBase
+	{
+		const char* mIconName;
 
+		AttrIcon(const char* iconName) : mIconName(iconName) {}
+	};
 
 
 

@@ -563,7 +563,17 @@ namespace UCore
 				if (compareLambda(Elements()[i])) return true;
 			return false;
 		}
-		
+
+		template<typename TElementTo> TArray<TElementTo>& CastedRef()
+		{
+			return *((TArray<TElementTo>*)(this));
+		}
+		template<typename TElementTo> const TArray<TElementTo>& CastedRef() const
+		{
+			return *((const TArray<TElementTo>*)(this));
+		}
+
+
 		class Iter
 		{
 		public:

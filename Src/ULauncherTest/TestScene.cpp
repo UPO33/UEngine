@@ -43,7 +43,7 @@ TestScene::TestScene()
 			pCmdList->ResourceBarrier(barriers);
 		}
 
-		pCmdList->SetRnderTargets(1, mRTV, DescHandleDSV());
+		pCmdList->SetRenderTargets(1, mRTV, DescHandleDSV());
 		
 		tsq->Render(pCmdList);
 

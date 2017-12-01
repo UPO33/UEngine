@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Base.h"
 #include "Array.h"
 #include "Object.h"
 #include "ObjectPtr.h"

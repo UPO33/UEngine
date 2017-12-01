@@ -2,7 +2,7 @@
 
 namespace UEngine
 {
-UCLASS_BEGIN_IMPL(AStaticMesh)
+UCLASS_BEGIN_IMPL(AStaticMesh, AttrIcon("StaticMesh.png"))
 UCLASS_END_IMPL(AStaticMesh)
 
 UCLASS_BEGIN_IMPL(StaticMeshPhysData)

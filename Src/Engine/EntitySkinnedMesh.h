@@ -27,11 +27,11 @@ namespace UEngine
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-	class AAnimationSequence;
+	class AAnimSequence;
 	class EntitySkinnedMesh;
 
 
-	class AnimationKeyFrame
+	class AnimKeyFrame
 	{
 		float	mTime;
 		Vec3	mLocation;
@@ -39,41 +39,45 @@ namespace UEngine
 		Quat	mRotation;
 	};
 
-	class AnimationEventBase : public Object
+	//////////////////////////////////////////////////////////////////////////
+	class AnimEventBase : public Object
 	{
-		UCLASS(AnimationEventBase, Object)
+		UCLASS(AnimEventBase, Object)
 
-		friend AAnimationSequence;
-		friend AnimationKeyFrame;
+		friend AAnimSequence;
+		friend AnimKeyFrame;
 
-		virtual void OnFire(EntitySkinnedMesh* ownerEntity, const AAnimationSequence* ownerAnimation) {}
+		virtual void OnFire(EntitySkinnedMesh* ownerEntity, const AAnimSequence* ownerAnimation) {}
 		float GetFireTime() const { return mFireTime; }
 
-		AAnimationSequence* GetOwner() const
+		AAnimSequence* GetOwner() const
 		{
-			return (AAnimationSequence*)this->GetObjectParent();
+			//parent of this object must be always an AnimSequence
+			return (AAnimSequence*)this->GetObjectParent();
 		}
 	private:
 		float				mFireTime;
 	};
 	
-
-	class AAnimationSequence : public Asset
+	//////////////////////////////////////////////////////////////////////////
+	class AAnimSequence : public Asset
 	{
-		TArray<AnimationKeyFrame>		mFrames;
-		//array of animation events sorted by less mFireTime 
-		TArray<AnimationEventBase*>		mEvents;
+		UCLASS(AAnimSequence, Asset)
 
-		AnimationEventBase* AddEvent(TSubClass<AnimationEventBase> eventClass, float fireTime)
+		TArray<AnimKeyFrame>		mFrames;
+		//array of animation events sorted by less mFireTime 
+		TArray<AnimEventBase*>		mEvents;
+
+		AnimEventBase* AddEvent(TSubClass<AnimEventBase> eventClass, float fireTime)
 		{
-			AnimationEventBase* newEvent = NewObject<AnimationEventBase>(eventClass, this);
+			AnimEventBase* newEvent = NewObject<AnimEventBase>(eventClass, this);
 			newEvent->mFireTime = fireTime;
 			mEvents.Add(newEvent);
 		}
 		virtual void OnPostLoad()
 		{
 			ForEachChild(false, false, [this](Object* child){
-				if (AnimationEventBase* animEvent = child->Cast<AnimationEventBase>())
+				if (AnimEventBase* animEvent = child->Cast<AnimEventBase>())
 				{
 					this->mEvents.AddUnique(animEvent);
 				 }

@@ -566,9 +566,17 @@ namespace UEngine
 				else
 					pObject = asObjectStar[i];
 
-				if (pObjectClass->IsBaseOf<Asset>())
+				if (pObjectClass->IsBaseOf<Asset>()) //is asset?
 				{
-					ULOG_FATAL("");
+					if (pObject)
+					{
+						Asset* pAsset = UCastSure<Asset>(pObject);
+						pAsset->GetID().MetaSerialize(ser);
+					}
+					else
+					{
+						AssetID().MetaSerialize(ser);
+					}
 				}
 				else
 				{
@@ -599,6 +607,11 @@ namespace UEngine
 		//same as above but for assets
 		struct SAssetProperty
 		{
+			SAssetProperty(void* ptr, bool bTObjectPtr, AssetID assetId) :
+				mProperty(ptr), mIsTObjectPtr(bTObjectPtr), mAssetID(assetId)
+			{
+			}
+
 			union
 			{
 				void*					mProperty;
@@ -610,14 +623,14 @@ namespace UEngine
 			AssetID		mAssetID;
 		};
 
-		TArray<SObjectProperty>		mObjectPtrProperties;
-		TArray<SAssetProperty>		mAssetPtrProperties;
+		TArray<SObjectProperty>		mPointerPhaseObjectPtrProperties;
+		TArray<SAssetProperty>		mPointerPhaseAssetPtrProperties;
 
 		//////////////////////////////////////////////////////////////////////////
 		//initializes the Object* and TObjectPtr properties of loaded objects, non-assets only
 		void PerformObjectPointerPhase()
 		{
-			for (const SObjectProperty& iter : mObjectPtrProperties)
+			for (const SObjectProperty& iter : mPointerPhaseObjectPtrProperties)
 			{
 				Object* pObjectToAssign = nullptr;
 				
@@ -630,36 +643,29 @@ namespace UEngine
 					*iter.mPropertyObject = pObjectToAssign;
 			}
 
-			mObjectPtrProperties.RemoveAll();
+			mPointerPhaseObjectPtrProperties.RemoveAll();
 		}
 
 		//////////////////////////////////////////////////////////////////////////
 		//same as above but for assets
 		void PerformAssetPointerPhase()
 		{
-			for (const SAssetProperty& iter : mAssetPtrProperties)
+			for (const SAssetProperty& iter : mPointerPhaseAssetPtrProperties)
 			{
-				Asset*	pAssetToAssign = nullptr;
-
-				if (!iter.mAssetID.IsNull())
-				{
-					ULOG_FATAL("not implemented ye");
-					//#TODO 
-					//if (AssetItem* pAssetRefrence = GAssetMgr()->FindAsset(iter.mAssetID))
-					//{
-					//	pAssetToAssign = pAssetRefrence->LoadNow();
-					//}
-				}
+				Asset*	pAssetToAssign = GAssetMgr()->LoadAsset(iter.mAssetID);
 
 				if (iter.mIsTObjectPtr)
 					*iter.mPropertyTObjectPtr = pAssetToAssign;
 				else
 					*iter.mPropertyObject = pAssetToAssign;
 			}
+
+			mPointerPhaseAssetPtrProperties.RemoveAll();
 		}
 		//////////////////////////////////////////////////////////////////////////
 		void RTObjectPtrOrObjectPointer(const ClassInfo* pObjectClass, void* pItems, size_t count, ByteDeserializer& ser, bool bTObjectPtr)
 		{
+			//casting as array of Object* and TObjectPtr
 			auto asTObjectPtr = (TObjectPtr<Object>*)(pItems);
 			auto asObjectStar = (Object**)(pItems);
 
@@ -672,9 +678,15 @@ namespace UEngine
 				else
 					pObject = asObjectStar[i];
 
-				if (pObjectClass->IsBaseOf<Asset>())
+				if (pObjectClass->IsBaseOf<Asset>()) //is asset?
 				{
-					ULOG_FATAL("not implemented yet");
+					AssetID assetID;
+					assetID.MetaDeserialize(ser);
+
+					if(bTObjectPtr)
+						mPointerPhaseAssetPtrProperties.Add(SAssetProperty((TObjectPtr<Asset>*)(asObjectStar + i), bTObjectPtr, assetID));
+					else
+						mPointerPhaseAssetPtrProperties.Add(SAssetProperty((Asset**)(asObjectStar + i), bTObjectPtr, assetID));
 				}
 				else
 				{
@@ -683,9 +695,9 @@ namespace UEngine
 
 					//even invalid index is added to array, pointer phase must zero it
 					if (bTObjectPtr)
-						mObjectPtrProperties.Add(SObjectProperty(asTObjectPtr + i, true, index));
+						mPointerPhaseObjectPtrProperties.Add(SObjectProperty(asTObjectPtr + i, true, index));
 					else
-						mObjectPtrProperties.Add(SObjectProperty(asObjectStar + i, false, index));
+						mPointerPhaseObjectPtrProperties.Add(SObjectProperty(asObjectStar + i, false, index));
 
 				}
 			}
@@ -738,6 +750,7 @@ namespace UEngine
 		}
 		else
 		{
+			ULOG_ERROR("not implemented yet use cooked instead");
 			return false;
 		}
 
@@ -811,6 +824,7 @@ namespace UEngine
 		}
 		else
 		{
+			ULOG_ERROR("not implemented yet use cooked instead");
 			return nullptr;
 		}
 	}

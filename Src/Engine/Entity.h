@@ -7,6 +7,7 @@
 #include "../Core/Quat.h"
 #include "../Core/Matrix.h"
 #include "../Core/Bound.h"
+#include "../Core/Meta.h"
 #include "TaskMgr.h"
 
 namespace UEngine
@@ -32,6 +33,16 @@ namespace UEngine
 
 	};
 
+	
+	struct AttrEditorSpawnable : AttrBase
+	{
+		const char* mName;
+		const char* mCategory;
+
+		AttrEditorSpawnable(const char* name, const char* category = nullptr) 
+			: mName(name), mCategory(category)
+		{}
+	};
 
 	//base class for anything that can be placed to a scene,  
 	//Entity is hierarchical can have children and parent but doest have transform
@@ -109,7 +120,7 @@ namespace UEngine
 		//register this entity to @parent
 		//@parent mus be a registered entity with a valid scene and this entity must be unregistered 
 		//will all the registers children as well
-		virtual void RegisterEntityTo(Entity* parent);
+		virtual void RegisterEntityTo(Entity* parent, bool bTop = false);
 		virtual void RegisterEntityTo(Scene* pScene);
 
 		virtual void UnregisterEntity();
@@ -177,7 +188,7 @@ namespace UEngine
 		size_t				mIsAlive : 1;
 		size_t				mIsInvWorldTransformDirty : 1;
 		size_t				mIsSelected : 1;
-		size_t				mEdIsClosedNode : 1;
+		size_t				mEditorIsExpanded : 1;
 		size_t				mIsHover : 1;
 		size_t				mBeginPlayWasCalled : 1;
 		size_t				mEndPlayWasCalled : 1;

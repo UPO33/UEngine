@@ -192,12 +192,12 @@ public:
 		this->ResourceBarrier(numBarriers, barriers);
 	}
 	//////////////////////////////////////////////////////////////////////////
-	void SetRnderTargets(unsigned numRenderTraget, DescHandleRTV renderTargetBase, DescHandleDSV depthStencil)
+	void SetRenderTargets(unsigned numRenderTraget, DescHandleRTV renderTargetBase, DescHandleDSV depthStencil)
 	{
 		m_CommandList->OMSetRenderTargets(numRenderTraget, numRenderTraget ? &(renderTargetBase.GetCpuHandle()) : nullptr, true
 			, depthStencil.IsNull() ? nullptr : &(depthStencil.GetCpuHandle()));
 	}
-	void SetRnderTargets(unsigned numRenderTraget, const DescHandleRTV* renderTargets, DescHandleDSV depthStencil)
+	void SetRenderTargets(unsigned numRenderTraget, const DescHandleRTV* renderTargets, DescHandleDSV depthStencil)
 	{
 		D3D12_CPU_DESCRIPTOR_HANDLE handles[8];
 		for (unsigned i = 0; i < numRenderTraget; i++)
@@ -207,8 +207,14 @@ public:
 			, depthStencil.IsNull() ? nullptr : &(depthStencil.GetCpuHandle()));
 
 	}
+	
 	//////////////////////////////////////////////////////////////////////////
-
+	void ClearRTV(DescHandleRTV rtv, const Color& clearColor)
+	{
+		m_CommandList->ClearRenderTargetView(rtv, (float*)&clearColor, 0, nullptr);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////
 protected:
 
 	void BindDescriptorHeaps(void);

@@ -1,5 +1,4 @@
-#include "Base.h"
-
+#if 0
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qsplashscreen.h>
 #include <QtWidgets/qmainwindow.h>
@@ -10,13 +9,14 @@
 
 #include "../EditorBase/FlowLayout.h"
 
+
 class EditableLableWidget : public QWidget
 {
 public:
 	QLabel* mLable;
 	QLineEdit* mLineEdit;
 
-	void UResizeLineEditToContents(QLineEdit* le)
+	static void UResizeLineEditToContents(QLineEdit* le)
 	{
 		QString text = le->text();
 		QFontMetrics fm = le->fontMetrics();
@@ -30,7 +30,8 @@ public:
 		EditableLableWidget* mEW;
 		Lbl(QWidget* parent, EditableLableWidget* ew) : QLabel(parent), mEW(ew)
 		{
-
+			this->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+			this->setAlignment(Qt::AlignmentFlag::AlignCenter);
 		}
 		void mouseDoubleClickEvent(QMouseEvent * ev) override
 		{
@@ -41,6 +42,7 @@ public:
 				mEW->mLineEdit->setVisible(true);
 				mEW->mLineEdit->selectAll();
 				mEW->mLineEdit->setFocus();
+				UResizeLineEditToContents(mEW->mLineEdit);
 			}
 		}
 	};
@@ -49,30 +51,72 @@ public:
 		EditableLableWidget* mEW;
 		LEd(QWidget* p, EditableLableWidget* ew) : QLineEdit(p), mEW(ew)
 		{
+			this->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+			this->setAlignment(Qt::AlignmentFlag::AlignCenter);
 
 		}
 	protected:
 		virtual void focusOutEvent(QFocusEvent *event) override
 		{
+			ULOG_MESSAGE("FO");
 			QLineEdit::focusOutEvent(event);
+			mEW->FinishEditing();
 		}
 		virtual bool eventFilter(QObject *obj, QEvent *event) override
 		{
-			Q_UNUSED(obj)
-				if (event->type() == QEvent::FocusIn)
-				{
+			if (event->type() == QEvent::FocusIn)
+			{
 
-				}
-				else if (event->type() == QEvent::FocusOut)
-				{
+			}
+			else if (event->type() == QEvent::FocusOut)
+			{
 
-				}
+			}
 
-			return false;
+			return true;
 		}
 
-	};
-	EditableLableWidget(QWidget* parent) : QWidget(parent)
+
+		virtual void keyPressEvent(QKeyEvent *event) override
+		{
+			if (event->key() == Qt::Key_Escape)
+			{
+				event->accept();
+				this->mEW->FinishEditing();
+				return;
+			}
+			QLineEdit::keyPressEvent(event);
+		}
+
+
+		virtual void leaveEvent(QEvent *event) override
+		{
+			QLineEdit::leaveEvent(event);
+			ULOG_MESSAGE("");
+		}
+
+
+		virtual void closeEvent(QCloseEvent *event) override
+		{
+			QLineEdit::closeEvent(event);
+			ULOG_MESSAGE("");
+		}
+
+
+		virtual void changeEvent(QEvent* e) override
+		{
+			QLineEdit::changeEvent(e);
+			ULOG_MESSAGE("");
+		}
+
+	public:
+		virtual QPaintEngine * paintEngine() const override
+		{
+			throw std::logic_error("The method or operation is not implemented.");
+		}
+
+		};
+	EditableLableWidget(QWidget* parent = nullptr) : QWidget(parent)
 	{
 		this->setLayout(new QVBoxLayout);
 
@@ -91,14 +135,12 @@ public:
 			UResizeLineEditToContents(mLineEdit);
 		});
 		connect(mLineEdit, &QLineEdit::editingFinished, this, [this]() {
-		
-			
-
+			ULOG_MESSAGE("EF");
+			FinishEditing();
 		});
 		connect(mLineEdit, &QLineEdit::returnPressed, this, [this]() {
-			mLineEdit->setVisible(false);
-			mLable->setText(mLineEdit->text());
-			mLable->setVisible(true);
+			ULOG_MESSAGE("RP");
+			FinishEditing();
 		});
 
 		/*
@@ -120,7 +162,88 @@ public:
 		*/
 
 	}
+	void FinishEditing()
+	{
+		mLineEdit->setVisible(false);
+		mLable->setText(mLineEdit->text());
+		mLable->setVisible(true);
+	}
+	};
+
+struct AssetThumbnailWidget : QWidget
+{
+	AssetThumbnailWidget(QWidget* p = nullptr) : QWidget(p)
+	{
+		//this->setMinimumSize(80, 80);
+		//this->setMaximumSize(80, 80);
+		this->setStyleSheet("background-color: rgb(255, 26, 233);");
+	}
 };
+
+struct AssetItemWidget : QWidget
+{
+	AssetItemWidget(QWidget* p = nullptr) : QWidget(p)
+	{
+		this->setMinimumSize(128, 128 + 20);
+		this->setMaximumSize(128, 128 + 20);
+
+		this->setLayout(new QVBoxLayout);
+		this->layout()->setSpacing(2);
+		this->layout()->setMargin(2);
+		this->layout()->addWidget(new AssetThumbnailWidget);
+		this->layout()->addWidget(new EditableLableWidget);
+	}
+protected:
+	virtual void enterEvent(QEvent *event) override
+	{
+	}
+
+
+	virtual void leaveEvent(QEvent *event) override
+	{
+	}
+
+public:
+	virtual QPaintEngine * paintEngine() const override
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class ABItemWidget : public QWidget
 {
@@ -144,7 +267,7 @@ public:
 	}
 };
 
-#if 1
+
 int ___main(int argc, char** argv)
 {
 	using namespace UEditor;

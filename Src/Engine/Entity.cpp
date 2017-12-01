@@ -182,7 +182,7 @@ namespace UEngine
 		this->mRenderStateDirty = false;
 	}
 
-	void Entity::RegisterEntityTo(Entity* parent)
+	void Entity::RegisterEntityTo(Entity* parent, bool bTop)
 	{
 		UASSERT(parent);
 		UASSERT(parent->mScene);
@@ -196,7 +196,7 @@ namespace UEngine
 				UASSERT(childEntity->mScene == nullptr && childEntity->mRegistered == false);
 		});
 
-		ObjectAattachTo(parent);
+		ObjectAattachTo(parent, bTop);
 
 		Entity* parentEntity = GetParentEntity();
 		UASSERT(parentEntity && parentEntity->mScene);

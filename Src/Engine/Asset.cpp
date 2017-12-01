@@ -9,28 +9,26 @@ namespace UEngine
 		UCLASS_END_IMPL(AssetID)
 
 
-		UCLASS_BEGIN_IMPL(AssetItem)
-		UCLASS_END_IMPL(AssetItem)
-
 		UCLASS_BEGIN_IMPL(Asset)
 		UCLASS_END_IMPL(Asset)
 
 
-};
+			};
 
 namespace UEngine
 {
-	const ClassInfo* AssetItem::GetClass()
+	UENGINE_API AssetMgr* gAssetMgr = nullptr;
+
+	const uint32 AssetFileHeader::SIGNATURE = *((uint32*)"UEAF");
+
+
+	const ClassInfo* AssetData::GetClass()
 	{
 		return GMetaSys()->FindClass(mClassName);
 	}
 
-	UEngine::Asset* AssetItem::LoadNow()
-	{
-		//#TODO
-		return nullptr;
-	}
 
+	
 	AssetID AssetID::GenNew()
 	{
 		unsigned time = GetSecondsSince2000();
@@ -48,13 +46,13 @@ namespace UEngine
 	}
 	Name Asset::GetName() const
 	{
-		if (mItem) return mItem->GetName();
+		if (mAssetData) return mAssetData->GetName();
 		return Name();
 	}
 
 	AssetID Asset::GetID() const
 	{
-		if (mItem) return mItem->GetID();
+		if (mAssetData) return mAssetData->GetID();
 		return AssetID();
 	}
 
@@ -64,8 +62,5 @@ namespace UEngine
 	}
 
 
-	AssetMgr* AssetMgr::Get()
-	{
-		return nullptr;
-	}
+
 };

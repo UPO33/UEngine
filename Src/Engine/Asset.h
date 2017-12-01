@@ -8,12 +8,17 @@
 #include "../Core/Delegate.h"
 #include "../Core/Text.h"
 
+namespace UEditor
+{
+	class AssetMgrEd;
+};
+
 namespace UEngine
 {
 	//////////////////////////////////////////////////////////////////////////
 	class Asset;
 	class AssetID;
-	class AssetItem;
+	class AssetData;
 	class AssetExt;
 	class AssetMgr;
 
@@ -44,30 +49,28 @@ namespace UEngine
 
 
 
-	//actually an asset item contains the data that are required whether asset is not loaded to memory yet
-	class UENGINE_API AssetItem : public Object
+	//actually an asset item contains the data that are required whether or not the asset is loaded to memory yet
+	class UENGINE_API AssetData
 	{
-		UCLASS(AssetItem)
+	public:
 
-		friend AssetMgr;
-		friend Asset;
-
+		virtual ~AssetData() {}
+		
 		AssetID						GetID() const { return mID; }
-		//return the name of asset, name are relative to assets folders e.g "Engine/DefaulTexture"
+		//return the name of asset, names are relative to assets folders e.g "Engine/DefaulTexture", "Meshes/Cube"
 		Name						GetName() const { return mName; }
 		Name						GetClassName() const { return mClassName; }
 		//return the class of asset, null if the class is unknown
 		const ClassInfo*			GetClass();
 		//return the instance, null if not loaded
 		Asset*						GetInstance() const { return mInstance; }
-		//load the asset to memory and block the thread
-		Asset*						LoadNow();
-
-	private:
+		
+	
 		AssetID					mID;
-		Name					mName;
 		Name					mClassName;
-		Asset*					mInstance;
+
+		Name					mName;
+		Asset*					mInstance = nullptr;
 	};
 
 	//using extension u would be able to add features to a asset class without changing source or inheriting from the asset class
@@ -100,10 +103,13 @@ namespace UEngine
 	//the base class for assets, anything like 'Texture, Mesh, Sound' that can be loaded is a asset
 	class UENGINE_API Asset : public Object
 	{
+		friend UEditor::AssetMgrEd;
+		friend AssetMgr;
+
 		UCLASS(Asset, Object)
 	public:
 
-		AssetItem*			GetAssetItem() const { return mItem; }
+		AssetData*			GetAssetData() const { return mAssetData; }
 		Name				GetName() const;
 		AssetID				GetID() const;
 
@@ -125,7 +131,7 @@ namespace UEngine
 
 
 	private:
-		AssetItem*				mItem = nullptr;
+		AssetData*				mAssetData = nullptr;
 		TArray<AssetExt*>		mExtentions;
 		TArray<Name>			mTags;
 		String					mAssetImportFile;	//the full path of the file that asset was loaded from
@@ -146,13 +152,31 @@ namespace UEngine
 	class UENGINE_API AssetMgr
 	{
 	public:
-		static AssetMgr* Get();
 
-		virtual AssetItem* FindAsset(Name assetName) const = 0;
-		virtual AssetItem* FindAsset(AssetID assetID) const = 0;
-		
+		virtual AssetData* FindAsset(Name assetName) = 0;
+		virtual AssetData* FindAsset(AssetID assetID) = 0;
+		virtual Asset* LoadAsset(AssetData*) = 0;
+
+		Asset* LoadAsset(Name assetName) { return LoadAsset(FindAsset(assetName)); }
+		Asset* LoadAsset(AssetID assetID) { return LoadAsset(FindAsset(assetID)); }
+
 		virtual Asset* CreateUnstableAsset(const ClassInfo* assetClass) = 0;
 	};
 
-	inline AssetMgr* GAssetMgr() { return AssetMgr::Get(); }
+	extern UENGINE_API AssetMgr* gAssetMgr;
+	
+	inline AssetMgr* GAssetMgr() { return gAssetMgr; }
+
+	
+
+	struct UENGINE_API AssetFileHeader
+	{
+		static const unsigned MAX_POSSIBLE_SIZE = sizeof(AssetID) + NAME_MAX_LENGTH + 32;
+		static const uint32 SIGNATURE;
+	
+
+		uint32 mSign = 0;
+		AssetID mID;
+		Name mClassName;
+	};
 };

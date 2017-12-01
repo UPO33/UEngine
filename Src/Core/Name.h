@@ -64,7 +64,7 @@ namespace UCore
 		bool IsEmpty() const { return mInstance->IsEmpty(); }
 		size_t Length() const { return mInstance->mLength; }
 		NameHashT GetHash() const { return mInstance->mHash; }
-		NameCharT GetHashLowerCase() const { return mInstance->mHashLowerCase; }
+		NameHashT GetHashLowerCase() const { return mInstance->mHashLowerCase; }
 		const NameCharT* CStr() const { return mInstance->CStr(); }
 		const NameInstance* GetInstance() const { return mInstance; }
 

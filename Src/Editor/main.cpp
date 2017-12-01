@@ -1,8 +1,15 @@
-#include "Base.h"
+#include "EditorBase.h"
 
 
+#include "../Engine/TaskMgr.h"
+#include "../EditorCommon/MainWindow.h"
+#include "../EditorCommon/Project.h"
+#include "../EditorCommon/AssetMgrEd.h"
+#include "../EditorCommon/EditorResources.h"
 
-#include "MainWindow.h"
+#include "../EditorCommon/NewAssetBrowser.h"
+
+#include "../Engine/EntityPrimitive.h"
 
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qsplashscreen.h>
@@ -16,144 +23,142 @@
 
 namespace UEditor
 {
-	MainWinfow*	gMainWindow;
-};
+	QApplication* gQApp;
 
-class EditableLableWidget : public QWidget
-{
-public:
-	QLabel* mLable;
-	QLineEdit* mLineEdit;
+	void UEngineStep();
+	void UEngineShutdown();
 
-	void UResizeLineEditToContents(QLineEdit* le)
+	//////////////////////////////////////////////////////////////////////////
+	void UEngineRender()
 	{
-		QString text = le->text();
-		QFontMetrics fm = le->fontMetrics();
-		int w = fm.boundingRect(text).width();
-		le->resize(w, le->height());
+		UASSERT(UIsRenderThread());
+
+		UEnqueue(EET_Game, []() {
+			UEngineStep();
+		});
 	}
-
-	struct Lbl : QLabel
+	//////////////////////////////////////////////////////////////////////////
+	void UEngineShutdown()
 	{
-		EditableLableWidget* mEW;
-		Lbl(QWidget* parent, EditableLableWidget* ew) : QLabel(parent), mEW(ew)
-		{
+		UASSERT(UIsGameThread());
 
-		}
-		void mouseDoubleClickEvent(QMouseEvent * ev) override
+		SafeDelete(gMainWidget);
+		SafeDelete(gAssetMgr);
+		SafeDelete(gEditorResources);
+		SafeDelete(gQApp);
+
+
+		gGFX->Release();
+		SafeDelete(gGFX);
+	}
+	//////////////////////////////////////////////////////////////////////////
+	//returns true if we should continue the game loop
+	bool UTick()
+	{
+		gMainWidget->Tick();
+		QApplication::processEvents();
+
+		return true;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	void UEngineStep()
+	{
+		UASSERT(UIsGameThread());
+
+		
+		bool bQuit = false;
+
+		bQuit |= !UTick();
+		bQuit |= !gMainWidget->isVisible();
+
+		UEnqueue(EET_Render, []() {
+			UEngineRender();
+		});
+
+		if (bQuit)
 		{
-			if (ev->button() == Qt::MouseButton::LeftButton)
+			UEngineShutdown();
+			gTaskMgr->ReqestExit();
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////
+	void UCreateTestScene()
+	{
+		
+	}
+	//////////////////////////////////////////////////////////////////////////
+	void UEngineInit()
+	{
+		UASSERT(UIsGameThread());
+
+		//init gfx
+		{
+			gGFX = new GFXContextDX12;
+			gGFX->Init();
+			SetGFXContext(gGFX);
+		}
+
+		
+
+		gQApp = new QApplication(__argc, __argv);
+
+		QCoreApplication::setOrganizationName("O_O");
+		QCoreApplication::setOrganizationDomain("upo33.blogspot.com");
+		QCoreApplication::setApplicationName("UEditor");
+		QCoreApplication::setApplicationVersion("0.0");
+
+		QLocale::setDefault(QLocale::c());
+
+		gEditorResources = new EditorResources;
+
+		QApplication::setStyle("Fusion");
+
+#if 0
+		/////loading style sheet
+		{
+			if (auto stylehseet = UFileOpenReadFull("../../Resources/dark.stylesheet"))
 			{
-				ev->accept();
-				this->setVisible(false);
-				mEW->mLineEdit->setVisible(true);
+				QString strSheet = QString::fromUtf8((const char*)stylehseet->Memory(), stylehseet->Size());
+				gQApp->setStyleSheet(strSheet);
 			}
 		}
-	};
-	EditableLableWidget(QWidget* parent) : QWidget(parent)
-	{
-		this->setLayout(new QVBoxLayout);
+#endif // 
+		gAssetMgr = new AssetMgrEd;
 		
-		mLable = new Lbl(this, this);
-		layout()->addWidget(mLable);
-		mLable->setText("asdasdasdad");
-
-		mLineEdit = new QLineEdit(this);
-		layout()->addWidget(mLineEdit);
-		//mLineEdit->setFixedWidth(64);
-
-		mLineEdit->setText(mLable->text());
-		mLineEdit->setVisible(false);
-
-		connect(mLineEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
-			UResizeLineEditToContents(mLineEdit);
-		});
-		connect(mLineEdit, &QLineEdit::returnPressed, this, [this]() {
-			mLineEdit->setVisible(false);
-			mLable->setText(mLineEdit->text());
-			mLable->setVisible(true);
-		});
-
-/*
-		this->setLayout(new QVBoxLayout);
-		mLineEdit = new QLineEdit(this);
-		layout()->addWidget(mLineEdit);
-		mLineEdit->setText("fghfgh");
-
-		mLineEdit->setReadOnly(false);
-		QPalette mEditable = mLineEdit->palette();  // Default colors
-		mLineEdit->setReadOnly(true);
-		QPalette  mNonEditable = mLineEdit->palette();
-		QColor col = mNonEditable.color(QPalette::Button);
-		mNonEditable.setColor(QPalette::Base, col);
-		mNonEditable.setColor(QPalette::Text, Qt::black);
-
-		mLineEdit->setReadOnly(true);
-		mLineEdit->setPalette(mNonEditable);
-		*/
-
+		
+		gMainWidget = new MainWidget();
+		gMainWidget->showMaximized();
 	}
+
+	//the initial task of engine , must not bee loop
+	void MainProc()
+	{
+		UEngineInit();
+		UEngineStep();
+	};
 };
 
 
-#if 1
+
 int main(int argc, char** argv)
 {
 	using namespace UEditor;
 
-	
-	QApplication app(argc, argv);
+#if 0 //debug widget?
+	DbgMain(argc, argv);
+#else
 
-	 QCoreApplication::setOrganizationName("UPOSoft");
-	 QCoreApplication::setOrganizationDomain("UPO33.com");
-	 QCoreApplication::setApplicationName("UEditor");
-	 QCoreApplication::setApplicationVersion("0.0");
+#if 1
+	gProject = new ProjectInfo;
+	gProject->mName = "TestProject";
+	gProject->mAbsoluteDir = QDir("../../TestProject").absolutePath();
+	gProject->mAbsoluteAssetsDir = QDir("../../TestProject/Assets/").absolutePath();
+	gProject->mAbsoluteShadersDir = QDir("../../TestProject/Shaders/").absolutePath();
+#endif
 
-	 QLocale::setDefault(QLocale::c());
-
-	 //QApplication::setStyle("Fusion");
-
-	 struct CPW : QOpenGLWidget
-	 {
-		 typedef QOpenGLWidget ParentT;
-
-	 protected:
-		 virtual void paintEvent(QPaintEvent *event) override
-		 {
-			 ParentT::paintEvent(event);
-		 }
-
-	 public:
-		 virtual QPaintEngine * paintEngine() const override
-		 {
-			 QPaintEngine* pe = ParentT::paintEngine();
-			 return nullptr;
-		 }
-
-	 };
-	 auto* glWnd = new CPW;
-	 new QPushButton(glWnd);
-	 glWnd->show();
-	 return app.exec();
-	 
-	 {
-		 gMainWindow = new MainWinfow(glWnd);
-		 gMainWindow->showMaximized();
-
-		 while (gMainWindow->isVisible())
-		 {
-			 QApplication::processEvents();
-
-			 if (rand() % 7 == 0)
-			 {
-				 ULOG_SUCCESS("sscessss %", rand());
-				 ULOG_ERROR("errorrr %", rand());
-			 }
-			 gMainWindow->Tick();
-
-			 QThread::usleep(10);
-		 }
-		 delete gMainWindow;
-	 }
+	gTaskMgr = new TaskMgr();
+	gTaskMgr->Run(&UEditor::MainProc);
+	delete gTaskMgr;
+	return 0;
+#endif
 };
-#endif // 0

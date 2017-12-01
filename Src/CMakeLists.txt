@@ -4,7 +4,6 @@ project(UEngine)
 
 #option(UCORE_BUILD_SHARED "dll or static" ON)
 #option(UENGINE_BUILD_SHARED "dll or static?" ON)
-#option(UEDITORBASE_BUILD_SHARED "dll or static" ON)
 #option(UGFXDIRECTX_BUILD_SHARED "" ON)
 #option(UGFXVULKAN_BUILD_SHARED "" ON)
 
@@ -44,11 +43,12 @@ endmacro()
 set(UCORE_BUILD_TYPE SHARED)
 set(UENGINE_BUILD_TYPE SHARED)
 set(UENGINE2D_BUILD_TYPE SHARED)
-set(UEDITORBASE_BUILD_TYPE SHARED)
+
 set(UGFXDIRECTX_BUILD_TYPE SHARED)
 set(UGFXVULKAN_BUILD_TYPE SHARED)
 set(UGFXCORE_BUILD_TYPE SHARED)
 set(USCENERENDERER_BUILD_TYPE SHARED)
+set(UEDITORCOMMON_BUILD_TYPE SHARED)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
@@ -56,11 +56,11 @@ add_definitions(
 -DUCORE_SHARED 
 -DUENGINE_SHARED 
 -DUENGINE2D_SHARED
--DUEDITORBASE_SHARED 
 -DUGFXDIRECTX_SHARED 
 -DUGFXVULKAN_SHARED 
 -DUGFXCORE_SHARED 
 -DUSCENERENDERER_SHARED
+-DUEDITORCOMMON_SHARED
 -DIMGUI_SHARED
 -DUCORE_HAS_ZLIB
 )
@@ -107,8 +107,10 @@ file(GLOB_RECURSE SOURCES_Core "Core/*.cpp")
 file(GLOB_RECURSE SOURCES_CoreTest "CoreTest/*.cpp")
 file(GLOB_RECURSE SOURCES_Engine "Engine/*.cpp")
 file(GLOB_RECURSE SOURCES_Launcher "Launcher/*.cpp")
-file(GLOB_RECURSE SOURCES_EditorBase "EditorBase/*.cpp")
-file(GLOB_RECURSE SOURCES_EditorBaseIM "EditorBaseIM/*.cpp")
+
+file(GLOB_RECURSE SOURCES_EditorCommon "EditorCommon/*.cpp")
+file(GLOB_RECURSE HEADERS_EditorCommon "EditorCommon/*.h")
+
 file(GLOB_RECURSE SOURCES_Editor "Editor/*.cpp")
 file(GLOB_RECURSE SOURCES_GFXDirectX "GFXDirectX/*.cpp")
 file(GLOB_RECURSE SOURCES_GFXVulkan "GFXVulkan/*.cpp")
@@ -118,16 +120,16 @@ file(GLOB_RECURSE SOURCES_IMGUI "IMGUI/*.cpp")
 file(GLOB_RECURSE SOURCES_DXTest "DXTest/*.cpp")
 file(GLOB_RECURSE SOURCES_LauncherTest "ULauncherTest/*.cpp")
 
-file(GLOB_RECURSE SOURCES_EngineBase "EngineBase/*.cpp")
-file(GLOB_RECURSE SOURCES_Engine2D "Engine2D/*.cpp")
-file(GLOB_RECURSE SOURCES_Launcher2D "Launcher2D/*.cpp")
-
 file(GLOB_RECURSE HEADERS_Core "Core/*.h")
 file(GLOB_RECURSE HEADERS_CoreTest "CoreTest/*.h")
 file(GLOB_RECURSE HEADERS_Engine "Engine/*.h")
 file(GLOB_RECURSE HEADERS_Launcher "Launcher/*.h")
-file(GLOB_RECURSE HEADERS_EditorBase "EditorBase/*.h")
-file(GLOB_RECURSE HEADERS_EditorBaseIM "EditorBaseIM/*.h")
+
+
+#IMGUI was removed from project
+#file(GLOB_RECURSE HEADERS_EditorBaseIM "EditorBaseIM/*.h")
+#file(GLOB_RECURSE SOURCES_EditorBaseIM "EditorBaseIM/*.cpp")
+
 file(GLOB_RECURSE HEADERS_Editor "Editor/*.h")
 file(GLOB_RECURSE HEADERS_GFXDirectX "GFXDirectX/*.h")
 file(GLOB_RECURSE HEADERS_GFXVulkan "GFXVulkan/*.h")
@@ -137,9 +139,7 @@ file(GLOB_RECURSE HEADERS_IMGUI "IMGUI/*.h")
 file(GLOB_RECURSE HEADERS_DXTest "DXTest/*.h" "DXTest/*.hlsl")
 file(GLOB_RECURSE HEADERS_LauncherTest "ULauncherTest/*.h")
 
-file(GLOB_RECURSE HEADERS_EngineBase "EngineBase/*.h")
-file(GLOB_RECURSE HEADERS_Engine2D "Engine2D/*.h")
-file(GLOB_RECURSE HEADERS_Launcher2D "Launcher2D/*.h")
+
 
 include_directories("${CMAKE_SOURCE_DIR}/ThirdParty/")
 include_directories("${CMAKE_SOURCE_DIR}/ThirdParty/assimp/include")
@@ -208,30 +208,31 @@ ${HEADERS_IMGUI})
 set_target_properties(IMGUI PROPERTIES COMPILE_FLAGS -DIMGUI_BUILD)
 target_link_libraries(IMGUI UCore)
 
-#EditorBase -------------------------------------------------------------------------
-add_library(UEditorBase ${UEDITORBASE_BUILD_TYPE}
-${SOURCES_EditorBase}
-${HEADERS_EditorBase}
+#EditorCommon -------------------------------------------------------------------------
+add_library(UEditorCommon ${UEDITORCOMMON_BUILD_TYPE}
+${SOURCES_EditorCommon}
+${HEADERS_EditorCommon}
 )
+set_target_properties(UEditorCommon PROPERTIES COMPILE_FLAGS -DUEDITORCOMMON_BUILD)
 
-set_target_properties(UEditorBase PROPERTIES COMPILE_FLAGS -DUEDITORBASE_BUILD)
-target_link_libraries(UEditorBase UCore UEngineBase)
-target_link_libraries(UEditorBase UCore
+target_link_libraries(UEditorCommon UCore UEngine UGFXDirectX)
+target_link_libraries(UEditorCommon
 debug ${QT5Dir}/lib/qt5cored.lib optimized ${QT5Dir}/lib/qt5core.lib
 debug ${QT5Dir}/lib/qt5guid.lib optimized ${QT5Dir}/lib/qt5gui.lib
 debug ${QT5Dir}/lib/qt5widgetsd.lib optimized ${QT5Dir}/lib/qt5widgets.lib
 )
-target_include_directories(UEditorBase PUBLIC "${QT5Dir}/include")
+target_include_directories(UEditorCommon PUBLIC "${QT5Dir}/include")
 
 
+#EditorBaseIM not supported anymore, I am focusing on QT
 #EditorBaseIM -------------------------------------------------------------------------
-add_library(UEditorBaseIM STATIC
-${SOURCES_EditorBaseIM}
-${HEADERS_EditorBaseIM}
-)
-
-set_target_properties(UEditorBaseIM PROPERTIES COMPILE_FLAGS -DUEDITORBASEIM_BUILD)
-target_link_libraries(UEditorBaseIM UCore UEngine)
+#add_library(UEditorBaseIM STATIC
+#${SOURCES_EditorBaseIM}
+#${HEADERS_EditorBaseIM}
+#)
+#
+#set_target_properties(UEditorBaseIM PROPERTIES COMPILE_FLAGS -DUEDITORBASEIM_BUILD)
+#target_link_libraries(UEditorBaseIM UCore UEngine)
 
 
 
@@ -241,7 +242,7 @@ ${SOURCES_Editor}
 ${HEADERS_Editor}
 )
 #note UGFXDirectX must be loaded dynamically in future
-target_link_libraries(UEditor UEditorBase UEditorBase)
+target_link_libraries(UEditor UEditorCommon UEngine UGFXDirectX)
 AdjustTargetDebugWorkingDir(UEditor)
 
 #UGFXCore -------------------------------------------------------------------------------------
@@ -303,34 +304,5 @@ debug ${QT5Dir}/lib/qt5widgetsd.lib optimized ${QT5Dir}/lib/qt5widgets.lib
 )
 AdjustTargetDebugWorkingDir(AStarTest)
 
-
-#UEngineBase --------------------------------------------------------------------------------------------------------------------------------------------------------
-add_library(UEngineBase 
-STATIC
-${SOURCES_EngineBase}
-${HEADERS_EngineBase}
-)
-
-set_target_properties(UEngineBase PROPERTIES COMPILE_FLAGS -DUENGINEBASE_BUILD)
-#Names passed into this can be libraries fullpaths to libraries, or the name of a library from an add_library command
-target_link_libraries(UEngineBase UCore)
-
-#UEngine2D --------------------------------------------------------------------------------------------------------------------------------------------------------
-add_library(UEngine2D 
-${UENGINE2D_BUILD_TYPE} 
-${SOURCES_Engine2D}
-${HEADERS_Engine2D}
-)
-
-set_target_properties(UEngine2D PROPERTIES COMPILE_FLAGS -DUENGINE2D_BUILD)
-#Names passed into this can be libraries fullpaths to libraries, or the name of a library from an add_library command
-target_link_libraries(UEngine2D UEngineBase UCore)
-
-#ULauncher2D ------------------------------------------------------------------------------------------------------------------------------------
-add_executable(ULauncher2D
-${SOURCES_Launcher2D}
-${HEADERS_Launcher2D})
-target_link_libraries(ULauncher2D UCore UEngine2D)
-AdjustTargetDebugWorkingDir(ULauncher2D)
 
 
