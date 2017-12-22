@@ -1,4 +1,5 @@
 #include "Meta.h"
+#include "ByteSerializer.h"
 
 namespace UCore
 {
@@ -423,5 +424,19 @@ namespace UCore
 	}
 
 
+
+	void TriTypeData::MetaSerialize(ByteSerializer& ser)
+	{
+		uint8 iType = (uint8)mType;
+		ser << iType;
+		mTypeName.MetaSerialize(ser);
+	}
+
+	void TriTypeData::MetaDeserialize(ByteDeserializer& dser)
+	{
+		uint8 iType = 0;
+		dser >> iType;
+		mTypeName.MetaDeserialize(dser);
+	}
 
 }

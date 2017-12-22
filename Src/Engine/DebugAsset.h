@@ -28,9 +28,13 @@ namespace UEngine
 		UCLASS(ADebugAsset, Asset)
 
 		float mFloat0 = 0;
+		float mFloatMinMax = 0;
 		int mInt0 = 0;
+		int mUneditableNumber = 100;
 		bool mBool0 = false;
 		Name mName = "Name";
+		String mString;
+		String mStringMultiLine;
 		Vec2 mVec2 = Vec2(0.0f);
 		Vec3 mVec3 = Vec3(0.0f);
 		Vec3 mVec4 = Vec4(0.0f);

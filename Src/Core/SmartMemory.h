@@ -16,20 +16,15 @@ namespace UCore
 		{
 			if (size) mMemory = MemAllocZero(size);
 		}
-		SmartMemBlock(void* pMemory, size_t size, bool bAllocAndCopy /*allocate new memory and copy @pMemory to it?*/)
+		//@pMemory memory to copy data from
+		//@size size of the memory in bytes
+		SmartMemBlock(void* pMemory, size_t size)
 		{
 			if (pMemory && size)
 			{
 				mSize = size;
-				if (bAllocAndCopy)
-				{
-					mMemory = MemAlloc(size);
-					MemCopy(mMemory, pMemory, size);
-				}
-				else
-				{
-					mMemory = pMemory;
-				}
+				mMemory = MemAlloc(size);
+				MemCopy(mMemory, pMemory, size);
 			}
 			else
 			{

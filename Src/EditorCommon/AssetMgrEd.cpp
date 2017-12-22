@@ -399,8 +399,8 @@ namespace UEditor
 				QFile file(pAssetFile->mAbsolutePath);
 				if (file.open(QFile::OpenModeFlag::WriteOnly))
 				{
-					file.write((const char*)serHeader.GetData(), serHeader.GetSize());
-					file.write((const char*)serData.GetData(), serData.GetSize());
+					file.write((const char*)serHeader.GetData(), serHeader.GetCurPos());
+					file.write((const char*)serData.GetData(), serData.GetCurPos());
 					file.close();
 
 					ULOG_SUCCESS("Asset [%] Saved", pAssetFile->mAbsolutePath);

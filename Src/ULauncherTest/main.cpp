@@ -281,7 +281,7 @@ int main_(int argc, char** argv)
 	ByteSerializer ser0;
 	UASSERT(USaveArchive(objToSave, ser0, true, false));
 	{
-		ByteDeserializer deser0 = ByteDeserializer(ser0.GetData(), ser0.GetSize());
+		ByteDeserializer deser0 = ByteDeserializer(ser0.GetData(), ser0.GetCurPos());
 		Object* objLoaded = ULoadArchive(deser0);
 		objLoaded->CastSure<TestEntity>()->PrintDbg();
 		//UPrintObjectClassHierarchy(objLoaded);
@@ -291,8 +291,8 @@ int main_(int argc, char** argv)
 			ByteSerializer ser1;
 			UASSERT(USaveArchive(objLoaded, ser1, true, false));
 			UASSERT(
-				CRC32::HashBuffer(ser0.GetData(), ser0.GetSize())
-				== CRC32::HashBuffer(ser1.GetData(), ser1.GetSize()));
+				CRC32::HashBuffer(ser0.GetData(), ser0.GetCurPos())
+				== CRC32::HashBuffer(ser1.GetData(), ser1.GetCurPos()));
 
 		}
 	}

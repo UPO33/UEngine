@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "ObjectSerializer.h"
+
 namespace UEngine
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -80,20 +82,7 @@ namespace UEngine
 		}
 	};
 
-	//////////////////////////////////////////////////////////////////////////
-	struct ObjectSerializer
-	{
-		bool Save(const Object* root, ByteSerializer& ser)
-		{
-			ULOG_FATAL("#TODO not implemented yet");
-			return false;
-		}
-		Object* Load(ByteDeserializer& ser)
-		{
-			ULOG_FATAL("#TODO not implemented yet");
-			return false;
-		}
-	};
+
 
 	//////////////////////////////////////////////////////////////////////////
 	struct ObjectSerializerCooked
@@ -113,13 +102,7 @@ namespace UEngine
 					mObjects.Add(child);
 				});
 
-				//loging 
-				{
-					for (Object* pObj : mObjects)
-					{
-						ULOG_MESSAGE("object %", pObj->GetObjectDebugStr() ? pObj->GetObjectDebugStr() : "");
-					}
-				}
+
 				ULOG_MESSAGE("% object collected", mObjects.Length());
 			}
 

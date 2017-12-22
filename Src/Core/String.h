@@ -91,11 +91,37 @@ namespace UCore
 	{
 		UCLASS(String)
 
-		String() : mStr(nullptr) {}
-		String(const wchar_t* wstr): mStr(wstr) {}
-		String(const char* cstr) : mStr(nullptr) {}
+		using CharT = char16_t;
 
-	private:
-		const wchar_t*	mStr;
+		String() {}
+		String(const CharT* nullTerminatedStr): mStr(nullTerminatedStr) {}
+		String(const CharT* str, size_t length) : mStr(str, length) {}
+		explicit String(const std::u16string& stdStr) : mStr(stdStr) {}
+
+		size_t Length() const { return mStr.length(); }
+		size_t Capacity() const { return mStr.capacity(); }
+
+		void Empty() { mStr.clear(); }
+		bool IsEmpty() const { return mStr.empty(); }
+		
+		operator bool() const { return IsEmpty(); }
+
+		CharT operator[] (size_t index) const 
+		{
+			UASSERT(index < Length());
+			return mStr[index];
+		}
+		CharT& operator[] (size_t index)
+		{
+			UASSERT(index < Length());
+			return mStr[index];
+		}
+		
+		const CharT* GetCharacters() const { return mStr.c_str(); }
+		
+		void MetaSerialize(ByteSerializer&);
+		void MetaDeserialize(ByteDeserializer&);
+
+		std::u16string mStr;
 	};
 };

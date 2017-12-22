@@ -98,5 +98,15 @@ namespace UCore
 		return 0;
 	}
 #endif // 
-	
+
+
+	//allocates the requested memory from pool, thew allocated memory will exist till shutdown. threadsafe
+	//this function is usually used for startup objects like meta classes and properties
+	UCORE_API void* MemPersistentPoolAlloc(size_t size, size_t align);
+
+	struct PersistentPoolAlloc
+	{
+		static void* operator new (size_t size) { return MemPersistentPoolAlloc(size, sizeof(void*)); }
+		static void operator delete(void*) {}
+	};
 };

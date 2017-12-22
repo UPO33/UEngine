@@ -157,6 +157,7 @@ namespace UEditor
 		QString mPropertyName;
 		void* mInstance = nullptr;
 		Object* mObject = nullptr;
+		bool mIsUpdatingWidget = false;
 
 		PBItemProperty(PBItemBase* parent) : PBItemBase(parent) 
 		{
@@ -179,22 +180,26 @@ namespace UEditor
 			}
 			return mPropertyName;
 		}
-		virtual void InitProperty(const PropertyInfo* pProperty)
-		{
-
-		}
+		
 
 		virtual QWidget* CreateWidget(int column) override
 		{
 			if (nullptr == mPropertyWidget)
+			{
 				mPropertyWidget = CreatePropertyWidget();
+				this->mIsUpdatingWidget = true;
+				this->UpdateWidgetValue();
+				this->mIsUpdatingWidget = false;
+			}
 			return mPropertyWidget;
 		}
+		//deriveds override this to create their own widget
 		virtual QWidget* CreatePropertyWidget()
 		{
 			return nullptr;
 		}
 		bool IsArrayElement() const { return mArrayIndex != -1; }
+		//returns the type of property, if this item is array's element returns the type of element not the array
 		const TriTypeData& GetPropertyType() const
 		{
 			if (mArrayIndex != -1)
@@ -202,15 +207,25 @@ namespace UEditor
 			else
 				return mPropertyInfo->GetArg0();
 		}
+		//if type of the property is not class returns null
+		const ClassInfo* GetPropertyTypeAsClass() const
+		{
+			return dynamic_cast<const ClassInfo*>(GetPropertyType().GetPtr());
+		}
+		//derived class must update the value of widget
 		virtual void UpdateWidgetValue(){}
+		//derived class must update the value of property
 		virtual void UpdateValue() {}
 		
 		void InvokeOnPropertyChange( bool bPre)
 		{
 		
 		}
+		//must be called when user changed the value of widget
 		void WidgetValueChanged()
 		{
+			if (mIsUpdatingWidget) return;
+
 			InvokeOnPropertyChange(true);
 			UpdateValue();
 			InvokeOnPropertyChange(false);
@@ -220,7 +235,10 @@ namespace UEditor
 			*((T*)GetValuePtr()) = newValue;
 		}
 		void* GetValuePtr() const;
-
+		template < typename T > const T& GetValueRef() const
+		{
+			return *((T*)GetValuePtr());
+		}
 		template<typename T> T* GetPropertyWidget() const
 		{
 			return dynamic_cast<T*>(mPropertyWidget);

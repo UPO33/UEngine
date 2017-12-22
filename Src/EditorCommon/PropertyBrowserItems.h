@@ -30,10 +30,16 @@ namespace UEditor
 			return w;
 		}
 		
-
+		
+		virtual void UpdateWidgetValue() override
+		{
+			GetPropertyWidget<QCheckBox>()->setChecked(this->GetValueRef<bool>());
+		}
 		virtual void UpdateValue() override
 		{
+			ULOG_MESSAGE("Cur State %", this->GetPropertyWidget<QCheckBox>()->isChecked());
 			SetValueMapped<bool>(GetPropertyWidget<QCheckBox>()->isChecked());
+			ULOG_MESSAGE("After Asgin State %", *((bool*)this->GetValuePtr()));
 		}
 
 	};
@@ -49,16 +55,43 @@ namespace UEditor
 		virtual QWidget* CreatePropertyWidget() override
 		{
 			QDoubleSpinBox* w = new QDoubleSpinBox;
+			w->setDecimals(IsFlotingPoint() ? 5 : 0);
+			
+			float minval = 0;
+			float maxval = 0;
+
+			if (auto pAttr = mPropertyInfo->GetAttribute<AttrMinMax>())
+			{
+				w->setMinimum(pAttr->mMin);
+				w->setMaximum(pAttr->mMax);
+			}
+
+			QObject::connect(w, static_cast<void(QDoubleSpinBox::*) (double)>(&QDoubleSpinBox::valueChanged), [this](double v) {
+				this->WidgetValueChanged();
+			});
 			return w;
 		}
 		virtual void UpdateValue() override
 		{
 			EMetaType type = GetNumbericType();
-			SetValueMapped(float());
+			
+			switch (type)
+			{
+			case EMetaType::EPT_int32:
+				SetValueMapped(static_cast<int32>(GetPropertyWidget<QDoubleSpinBox>()->value()));
+				break;
+			case EMetaType::EPT_float:
+				SetValueMapped(static_cast<float>(GetPropertyWidget<QDoubleSpinBox>()->value()));
+				break;
+			}
 		}
 		EMetaType GetNumbericType() const
 		{
 			return GetPropertyType().GetType();
+		}
+		bool IsFlotingPoint() const
+		{
+			return GetNumbericType() == EMetaType::EPT_float || GetNumbericType() == EMetaType::EPT_double;
 		}
 	};
 	//////////////////////////////////////////////////////////////////////////
@@ -71,20 +104,68 @@ namespace UEditor
 		}
 		virtual QWidget* CreatePropertyWidget() override
 		{
-			QLineEdit* w = new QLineEdit;
-			return w;
+			if (IsMultiLine())
+			{
+				QPlainTextEdit* w = new QPlainTextEdit;
+				w->setLineWrapMode(QPlainTextEdit::NoWrap);
+				w->setMinimumHeight(160);
+
+				QObject::connect(w, &QPlainTextEdit::textChanged, [this]() {
+					WidgetValueChanged();
+				});
+				return w;
+			}
+			else
+			{
+				QLineEdit* w = new QLineEdit;
+				w->setClearButtonEnabled(true);
+
+				QObject::connect(w, &QLineEdit::editingFinished, [this]() {
+					this->WidgetValueChanged();
+				});
+				return w;
+			}
+		}
+		virtual void UpdateWidgetValue() override
+		{
+			QString str;
+			if (GetPropertyClass() == Name::GetClassStatic()) //is UCore::Name?
+				str = UToQString(GetValueRef<Name>());
+			else if (GetPropertyClass() == String::GetClassStatic()) // is UCore::String
+				str = UToQString(GetValueRef<String>());
+
+
+			if (IsMultiLine())
+				GetPropertyWidget<QPlainTextEdit>()->setPlainText(str);
+			else
+				GetPropertyWidget<QLineEdit>()->setText(str);
 		}
 		virtual void UpdateValue() override
 		{
-			auto currentText = GetPropertyWidget<QLineEdit>()->text();
-			if(IsName())
-				SetValueMapped(UQString2Name(currentText));
-			//#TODO String and std::string
+			QString currentText;
+			if (IsMultiLine())
+				currentText = GetPropertyWidget<QPlainTextEdit>()->toPlainText();
+			else
+				currentText = GetPropertyWidget<QLineEdit>()->text();
+
+			if (GetPropertyClass() == Name::GetClassStatic()) //is UCore::Name
+				SetValueMapped<Name>(UQString2Name(currentText));
+			else if (GetPropertyClass() == String::GetClassStatic()) //is UCore::String
+				SetValueMapped<String>(UQString2String(currentText));
+		}
+		const ClassInfo* GetPropertyClass() const
+		{
+			auto ret = dynamic_cast<const ClassInfo*>(GetPropertyType().GetPtr());
+			UASSERT(ret);
+			return ret;
 		}
 		bool IsName() const
 		{
-			auto pClass = dynamic_cast<const ClassInfo*>(GetPropertyType().GetPtr());
-			return pClass == Name::GetClassStatic();
+			return GetPropertyClass() == Name::GetClassStatic();
+		}
+		bool IsMultiLine() const
+		{
+			return mPropertyInfo->GetAttribute<AttrMultiLine>() != nullptr;
 		}
 	};
 
@@ -93,7 +174,29 @@ namespace UEditor
 	class PBItemVecN : public PBItemProperty
 	{
 	public:
-		QDoubleSpinBox* mSpinboxes[4] = {};
+		//////////////////////////////////////////////////////////////////////////
+		class Widget : public QWidget
+		{
+		public:
+			QDoubleSpinBox* mSpinBoxes[4] = {};
+			PBItemVecN* mItem;
+
+			Widget(PBItemVecN* pItem, QWidget* parent = nullptr) : QWidget(parent)
+			{
+				mItem = pItem;
+
+				this->setLayout(new QHBoxLayout);
+				
+				for (unsigned i = 0; i < pItem->GetNumComponent(); i++)
+				{
+					static const char* LUTText[] = { "X", "Y", "Z", "W" };
+
+					mSpinBoxes[i] = new QDoubleSpinBox;
+					this->layout()->addWidget(mSpinBoxes[i]);
+					mSpinBoxes[i]->setToolTip(LUTText[i]);
+				}
+			}
+		};
 
 		PBItemVecN(PBItemBase* parent) : PBItemProperty(parent)
 		{
@@ -101,18 +204,10 @@ namespace UEditor
 		}
 		virtual QWidget* CreatePropertyWidget() override
 		{
-			QWidget* vecW = new QWidget;
-			vecW->setLayout(new QHBoxLayout);
-
-			for (unsigned i = 0; i < NumComponent(); i++)
-			{
-				mSpinboxes[i] = new QDoubleSpinBox;
-				vecW->layout()->addWidget(mSpinboxes[i]);
-			}
-
-			return vecW;
+			auto w = new Widget(this);
+			return w;
 		}
-		unsigned NumComponent() const
+		unsigned GetNumComponent() const
 		{
 			if (auto pClass = dynamic_cast<const ClassInfo*>(GetPropertyType().GetPtr()))
 			{
@@ -144,6 +239,7 @@ namespace UEditor
 	class PBItemObjectPtr : public PBItemProperty
 	{
 	public:
+		//////////////////////////////////////////////////////////////////////////
 		class Widget : public QCommandLinkButton
 		{
 		public:

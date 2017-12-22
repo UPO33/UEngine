@@ -30,7 +30,7 @@ namespace UCore
 	static const unsigned META_ENUM_SIZE = sizeof(uint32);
 
 	////base class for attributes, inherit from this to implement your own attribute
-	struct AttrBase
+	struct AttrBase : PersistentPoolAlloc
 	{
 		virtual ~AttrBase() {}
 	};
@@ -56,7 +56,7 @@ namespace UCore
 
 		AttrDisplayName(const char* name) : mName(name) {}
 	};
-	////specify a category for class, property, function ...
+	////specify a category for a class, property or function
 	struct AttrCategory : public AttrBase
 	{
 		const char* mCategory;
@@ -76,36 +76,39 @@ namespace UCore
 
 		AttrIcon(const char* iconName) : mIconName(iconName) {}
 	};
-
+	//
+	struct AttrMultiLine : AttrBase {};
 
 
 
 	//////////////////////////////////////////////////////////////////////////
 	struct AttributePack
 	{
-		struct Buffer
+		TArray<AttrBase*, TArrayAllocStack<AttrBase*, MAX_ATTRIBUTE>> mAttributes;
+
+		AttributePack()
 		{
-			char mBuffer[MAX_ATTRIBUTE_SIZE];
-		} mAttributes[MAX_ATTRIBUTE];
-
-		unsigned		mNumAttributes = 0;
-
+			for (AttrBase* pAttr : mAttributes)
+				delete pAttr;
+		}
+		//returns the first attribute found by the specified type
 		template<typename TAttribute> const TAttribute* GetAttribute() const
 		{
-			for (unsigned iAttrib = 0; iAttrib < mNumAttributes; iAttrib++)
-				if (TAttribute* casted = dynamic_cast<TAttribute*>((AttrBase*)(mAttributes[iAttrib].mBuffer)))
+			for (AttrBase* pAttr : mAttributes)
+			{
+				if (TAttribute* casted = dynamic_cast<TAttribute*>((AttrBase*)(pAttr)))
 					return casted;
-
+			}
 			return nullptr;
 		}
+
 	};
 
 	inline void ZZPackAttribute(AttributePack* out)
 	{}
 	template <typename T, typename... TArgs> void ZZPackAttribute(AttributePack* out, T first, TArgs... args)
 	{
-		new (out->mAttributes + out->mNumAttributes) T(first);
-		out->mNumAttributes++;
+		out->mAttributes.Add(new T(first));
 		ZZPackAttribute(out, args...);
 	}
 
@@ -117,7 +120,7 @@ namespace UCore
 		EPT_int8, EPT_uint8, EPT_int16, EPT_uint16, EPT_int32, EPT_uint32, EPT_int64, EPT_uint64,	//integral types
 		EPT_float, EPT_double,	//floating point types
 		EPT_enum,
-		EPT_TArray, EPT_TStackArray, EPT_TObjectPtr, EPT_TSubClass,	//templates
+		EPT_TArray, EPT_TObjectPtr, EPT_TSubClass,	//templates
 
 		EPT_ObjectPoniter, //Object*
 		EPT_Class
@@ -127,7 +130,7 @@ namespace UCore
 	UCORE_API size_t GetPropertyTypeSize(EMetaType type);
 
 	//////////////////////////////////////////////////////////////////////////
-	class UCORE_API FieldInfo : public ISmartBase
+	class UCORE_API FieldInfo : public ISmartBase, public PersistentPoolAlloc
 	{
 	public:
 		friend MetaSys;
@@ -198,6 +201,14 @@ namespace UCore
 		EMetaType			GetType() const { return mType; }
 		Name				GetTypeName() const { return mTypeName; }
 		const FieldInfo*	GetPtr() const;
+
+		void MetaSerialize(ByteSerializer& ser);
+		void MetaSerialize(ByteSerializer& ser) const
+		{
+			//call non const function 
+			((TriTypeData*)this)->MetaSerialize(ser);
+		}
+		void MetaDeserialize(ByteDeserializer&);
 
 	private:
 		EMetaType					mType;
@@ -382,7 +393,7 @@ namespace UCore
 		unsigned		mLineNumber;
 	};
 
-
+	//////////////////////////////////////////////////////////////////////////
 	class EnumInfo : public FieldInfo
 	{
 	public:
@@ -504,7 +515,7 @@ namespace UCore
 		static const EMetaType ElementType = TArg::Value;
 
 		static_assert(ElementType != EMetaType::EPT_Unknown, "unknown array element");
-		static_assert(ElementType != EMetaType::EPT_TArray && ElementType != EMetaType::EPT_TStackArray, "array as array element is not supported");
+		static_assert(ElementType != EMetaType::EPT_TArray, "array as array element is not supported");
 
 		static const char* GetTypeName() { return ZZGetClassName<TArray<T>>(); }
 	};

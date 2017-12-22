@@ -175,7 +175,7 @@ namespace UCore
 		{
 			UASSERT(nameLength <= NAME_MAX_LENGTH);
 
-			*this = Name((NameCharT*)ser.CurData(), nameLength);
+			*this = Name((NameCharT*)ser.GetCurData(), nameLength);
 			ser.IgnoreBytes(nameLength * sizeof(NameCharT));
 		}
 		else

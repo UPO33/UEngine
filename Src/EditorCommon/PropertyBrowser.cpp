@@ -157,7 +157,7 @@ namespace UEditor
 		}
 		else
 		{
-			return mPropertyInfo->Map(mInstance);
+			return mPropertyInfo->Map(this->mInstance);
 		}
 		return nullptr;
 	}

@@ -50,9 +50,17 @@ namespace UEditor
 	{
 		return Name(str.toStdString().c_str());
 	}
+	inline String UQString2String(const QString& str)
+	{
+		return String(str.toStdU16String());
+	}
 	inline QString UToQString(Name name)
 	{
 		return QString(name.CStr());
+	}
+	inline QString UToQString(const String& str)
+	{
+		return QString::fromStdU16String(str.mStr);
 	}
 
 	UEDITORCOMMON_API QIcon& UGetClassIcon(const ClassInfo* pClass);

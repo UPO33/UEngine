@@ -1,7 +1,7 @@
 #include "String.h"
 #include "Name.h"
 #include "Meta.h"
-
+#include "ByteSerializer.h"
 
 #include <string>
 #include <sstream>
@@ -11,6 +11,9 @@ namespace UCore
 {
 	UCLASS_BEGIN_IMPL(String)
 	UCLASS_END_IMPL(String)
+
+	
+
 };
 
 namespace UCore
@@ -167,4 +170,22 @@ namespace UCore
 
 	}
 
+
+	void String::MetaSerialize(ByteSerializer& ser)
+	{
+		uint32 len = (uint32)Length();
+		ser << len;
+		ser.Bytes(GetCharacters(), Length() * sizeof(CharT));
+	}
+
+	void String::MetaDeserialize(ByteDeserializer& ser)
+	{
+		uint32 len = 0;
+		len >> len;
+		if (len)
+		{
+			*this = String((const CharT*)ser.GetCurData(), len);
+			ser.IgnoreBytes(len);
+		}
+	}
 };
